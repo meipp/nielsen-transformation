@@ -2,31 +2,33 @@
 
 module StandardNT where
 
+import Prelude hiding (Either (..))
 import NielsenTransformation
 
 instance NielsenTransformable () where
     aa ((Terminal a):α :=: (Terminal b):β)
-        | a == b    = [α :=: β]
+        | a == b    = [(α :=: β, DeleteTerminalPrefix)]
         | otherwise = []
     aa _ = []
 
     xx ((Variable x _):α :=: (Variable y _):β)
-        | x == y    = [α :=: β]
+        | x == y    = [(α :=: β, DeleteVariablePrefix)]
         | otherwise = []
     xx _ = []
 
-    xε (x@(Variable _ _):α :=: β)
-        | nullable x = [α :=: β]
+    xε (x@(Variable xx _):α :=: β)
+        | nullable x = [(φ α :=: φ β, VariableIsEmpty Left xx)]
         | otherwise  = []
+        where φ = replace x ε
     xε _ = []
 
-    xa (x@(Variable _ _):α :=: a@(Terminal _):β)
-        = [x · φ α :=: φ β]
+    xa (x@(Variable xx _):α :=: a@(Terminal aa):β)
+        = [(x · φ α :=: φ β, VariableStartsWithTerminal Left xx aa)]
         where φ = replace x (a·x)
     xa _ = []
 
-    xy (x@(Variable _ _):α :=: y@(Variable _ _):β)
-        = [x · φ1 α :=: φ1 β, φ2 α :=: y · φ2 β]
+    xy (x@(Variable xx _):α :=: y@(Variable yy _):β)
+        = [(x · φ1 α :=: φ1 β, VariableStartsWithVariable Left xx yy), (φ2 α :=: y · φ2 β, VariableStartsWithVariable Right yy xx)]
         where φ1 = replace x (y·x)
               φ2 = replace y (x·y)
     xy _ = []
