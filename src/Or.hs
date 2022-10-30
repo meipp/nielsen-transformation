@@ -1,4 +1,8 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+
 module Or where
+
+import Data.Bifunctor (Bifunctor(bimap))
 
 data Or a b = Left' a | Right' b | Both a b
     deriving (Eq, Ord, Show)
@@ -14,5 +18,5 @@ fromEither (Right y) = Right' y
 
 toEither :: Or a b -> [Either a b]
 toEither (Left' x)  = [Left x]
-toEither (Right' y) = [Right x]
+toEither (Right' y) = [Right y]
 toEither (Both x y) = [Left x, Right y]
