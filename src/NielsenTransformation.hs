@@ -8,20 +8,29 @@
 
 module NielsenTransformation where
 
+import Data.Either (Either (..))
 import Data.Function (on)
 import Data.List (intercalate, nub)
 import Data.Maybe (mapMaybe)
 import Debug.Trace (trace, traceShow)
 import Prelude hiding (Either (..))
 
-data Symbol r = Terminal Char
-              | Variable Char r
-              deriving Eq
+newtype Terminal = Terminal Char
+    deriving Eq
+
+data Variable r = Variable Char r
+    deriving Eq
+
+type Symbol r = Either Terminal (Variable r)
 
 type Sequence r = [Symbol r]
 
 data Equation r = Sequence r :=: Sequence r
     deriving Eq
+
+-- instance Eq r => Eq (Equation r) where
+--     (α :=: β) == (α' :=: β') = α == α' && β == β'
+
 infix 3 :=:
 
 class CanBeEmpty a where
@@ -49,7 +58,7 @@ data Trace a = Start a | Rewrite (Trace a) RewriteOperation a
 instance Eq a => Eq (Trace a) where
     (==) = (==) `on` value
 
-data Side = Left | Right deriving (Eq, Show)
+data Side = Left' | Right' deriving (Eq, Show)
 
 data RewriteOperation = DeleteTerminalPrefix
                       | DeleteVariablePrefix
@@ -85,8 +94,8 @@ instance Swap (Equation r) where
     swap (α :=: β) = (β :=: α)
 
 instance Swap Side where
-    swap Left = Right
-    swap Right = Left
+    swap Left' = Right'
+    swap Right' = Left'
 
 instance Swap RewriteOperation where
     swap DeleteTerminalPrefix = DeleteTerminalPrefix
