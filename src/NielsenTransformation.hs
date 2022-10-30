@@ -10,7 +10,7 @@ module NielsenTransformation where
 
 import Data.Either (Either (..))
 import Data.Function (on)
-import Data.List (intercalate, nub)
+import Data.List (groupBy, intercalate, nub)
 import Data.Maybe (mapMaybe)
 import Debug.Trace (trace, traceShow)
 import Prelude hiding (Either (..))
@@ -217,8 +217,12 @@ listOr xs _  = xs
 nielsen :: (NielsenTransformable r, Eq r) => Equation r -> Bool
 nielsen e = case nielsenTransformation [Start e] of
     []    -> False
-    (t:_) -> trace ("trace: " ++ showRewrites bt) (traceShow (extractSolutionVariablePrefixes (map (\(_, o, _) -> o) bt)) True)
+    (t:_) -> trace ("trace: " ++ showRewrites bt) $
+             traceShow (extractSolutionVariablePrefixes operations) $
+             trace ("solution: " ++ showIndentedList showSolution (extractSolution operations)) $
+             True
         where bt = (reverse (backtrace t))
+              operations = map (\(_, o, _) -> o) bt
 
 showRewrite :: NielsenTransformable r => (Equation r, RewriteOperation, Equation r) -> String
 showRewrite (e1, o, e2) = showEquation e1 ++ " [" ++ show o ++ "] " ++ showEquation e2
@@ -229,6 +233,34 @@ showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]
 extractSolutionVariablePrefixes :: [RewriteOperation] -> [(Char, Char)]
 extractSolutionVariablePrefixes = mapMaybe variablePrefix
 
+extractSolution :: [RewriteOperation] -> [(Char, String)]
+extractSolution os = variables
+    where prefixes = extractSolutionVariablePrefixes os
+          variables = groups prefixes
+
+groups :: Eq a => [(a, b)] -> [(a, [b])]
+groups xs = map restructureGroup $ groupBy ((==) `on` fst) xs
+    where
+        representative :: [(a, b)] -> a
+        representative [] = undefined
+        representative (((r, _):_)) = r
+
+        values :: [(a, b)] -> [b]
+        values = map snd
+
+        restructureGroup :: [(a, b)] -> (a, [b])
+        restructureGroup g = (representative g, values g)
+
+-- showSolutions :: [(Char, String)] -> String
+-- showSolutions solutions = map showSolution
+showSolution :: (Char, String) -> String
+showSolution (x, "")  = x : " = ε"
+showSolution (x, "ε") = x : " = ε"
+showSolution (x, s)   = x : " = " ++ filter (/= 'ε') s
+
+showIndentedList :: (a -> String) -> [a] -> String
+showIndentedList _ [] = "[]"
+showIndentedList f xs = intercalate "\n" (["["] ++ map ("    " ++) (map f xs) ++ ["]"])
 
 variablePrefix :: RewriteOperation -> Maybe (Char, Char)
 variablePrefix DeleteTerminalPrefix = Nothing
