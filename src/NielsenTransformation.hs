@@ -15,6 +15,7 @@ import Data.List (groupBy, intercalate, nub, sortOn)
 import Data.Maybe (mapMaybe)
 import Debug.Trace (trace, traceShow)
 import Prelude hiding (Either (..))
+import Color
 
 newtype Terminal = Terminal Char
     deriving (Eq, Show)
@@ -81,10 +82,13 @@ data Side = Left' | Right' deriving (Eq, Show)
 
 data RewriteOperation r = DeleteTerminalPrefix
                         | DeleteVariablePrefix
-                        | VariableIsEmpty Side (Variable r)
-                        | VariableStartsWithTerminal Side (Variable r) Terminal
-                        | VariableStartsWithVariable Side (Variable r) (Variable r)
+                        | VariableIsEmpty Side (Variable r) (Replacement r)
+                        | VariableStartsWithTerminal Side (Variable r) Terminal (Replacement r)
+                        | VariableStartsWithVariable Side (Variable r) (Variable r) (Replacement r)
                         deriving (Eq, Show)
+
+data Replacement r = Replacement (Symbol r) (Sequence r)
+    deriving (Eq, Show)
 
 value :: Trace r -> Equation r
 value (Start x) = x
@@ -123,9 +127,9 @@ instance Swap Side where
 instance Swap (RewriteOperation r) where
     swap DeleteTerminalPrefix = DeleteTerminalPrefix
     swap DeleteVariablePrefix = DeleteVariablePrefix
-    swap (VariableIsEmpty side x) = VariableIsEmpty (swap side) x
-    swap (VariableStartsWithTerminal side x a) = VariableStartsWithTerminal (swap side) x a
-    swap (VariableStartsWithVariable side x y) = VariableStartsWithVariable (swap side) x y
+    swap (VariableIsEmpty side x replacement) = VariableIsEmpty (swap side) x replacement
+    swap (VariableStartsWithTerminal side x a replacement) = VariableStartsWithTerminal (swap side) x a replacement
+    swap (VariableStartsWithVariable side x y replacement) = VariableStartsWithVariable (swap side) x y replacement
 
 onBothSides :: RewriteRule r -> RewriteRule r
 onBothSides r e = r e ++ map swap (r (swap e))
@@ -229,10 +233,27 @@ nielsen e = case nielsenTransformation [Start e] of
         where bt = (reverse (backtrace t))
               operations = map (\(_, o, _) -> o) bt
 
-showRewrite :: (Show r, NielsenTransformable r) => (Equation r, RewriteOperation r, Equation r) -> String
+showRewrite :: (Eq r, Show r, NielsenTransformable r) => (Equation r, RewriteOperation r, Equation r) -> String
+showRewrite (α :=: β, o@DeleteTerminalPrefix, e2)
+    = --show o ++ " | " ++
+        colorPrefix red α ++ " = " ++ colorPrefix red β ++ " -> " ++ showEquation e2
+showRewrite (α :=: β, o@DeleteVariablePrefix, e2)
+    = --show o ++ " | " ++
+        colorPrefix red α ++ " = " ++ colorPrefix red β ++ " -> " ++ showEquation e2
+showRewrite (α :=: β, o@(VariableIsEmpty _ x (Replacement _ _)), e2)
+    = show o ++ " | " ++
+        colorOccurrences x red α ++ " = " ++ colorOccurrences x red β ++ " -> " ++ showEquation e2
+-- showRewrite (α :=: β, o@(VariableStartsWithTerminal _ x _ replacement), _)
+--     = show o ++ " | " ++
+--         colorOccurrencesExceptFirst x yellow α ++ " = " ++ colorOccurrencesExceptFirst x yellow β
+--     ++ " -> " ++ colorReplacedOccurrencesExceptFirst replacement yellow α  ++ " = " ++ colorReplacedOccurrencesExceptFirst replacement yellow β
+-- showRewrite (α :=: β, o@(VariableStartsWithVariable _ x _ replacement), _)
+--     = show o ++ " | " ++
+--         colorOccurrencesExceptFirst x yellow α ++ " = " ++ colorOccurrencesExceptFirst x yellow β
+--     ++ " -> " ++ colorReplacedOccurrencesExceptFirst replacement yellow α  ++ " = " ++ colorReplacedOccurrencesExceptFirst replacement yellow β
 showRewrite (e1, o, e2) = showEquation e1 ++ " [" ++ show o ++ "] " ++ showEquation e2
 
-showRewrites :: (Show r, NielsenTransformable r) => [(Equation r, RewriteOperation r, Equation r)] -> String
+showRewrites :: (Eq r, Show r, NielsenTransformable r) => [(Equation r, RewriteOperation r, Equation r)] -> String
 showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]"
 
 extractSolutionVariablePrefixes :: [RewriteOperation r] -> [(Variable r, Sequence r)]
@@ -263,6 +284,22 @@ showIndentedList f xs = intercalate "\n" (["["] ++ map ("    " ++) (map f xs) ++
 variablePrefix :: RewriteOperation r -> Maybe (Variable r, Sequence r)
 variablePrefix DeleteTerminalPrefix = Nothing
 variablePrefix DeleteVariablePrefix = Nothing
-variablePrefix (VariableIsEmpty side x) = Just (x, ε)
-variablePrefix (VariableStartsWithTerminal side x a) = Just (x, toSequence a)
-variablePrefix (VariableStartsWithVariable side x y) = Just (x, toSequence y)
+variablePrefix (VariableIsEmpty side x _) = Just (x, ε)
+variablePrefix (VariableStartsWithTerminal side x a _) = Just (x, toSequence a)
+variablePrefix (VariableStartsWithVariable side x y _) = Just (x, toSequence y)
+
+colorPrefix :: NielsenTransformable r => (String -> String) -> Sequence r -> String
+colorPrefix _ []     = error "Sequence cannot be empty"
+colorPrefix f (x:xs) = concat (f (showSymbol x) : map showSymbol xs)
+
+colorOccurrences :: (Eq r, NielsenTransformable r, ToSymbol a r) => a -> (String -> String) -> Sequence r -> String
+colorOccurrences _ _ [] = "ε"
+colorOccurrences x f s = concat (map (\y -> if toSymbol x == y then f (showSymbol y) else showSymbol y) s)
+
+colorOccurrencesExceptFirst :: (Eq r, NielsenTransformable r, ToSymbol a r) => a -> (String -> String) -> Sequence r -> String
+colorOccurrencesExceptFirst _ _ [] = "ε"
+colorOccurrencesExceptFirst x f (s:ss) = showSymbol s ++ concat (map (\y -> if toSymbol x == y then f (showSymbol y) else showSymbol y) ss)
+
+colorReplacedOccurrencesExceptFirst :: (Eq r, NielsenTransformable r) => Replacement r -> (String -> String) -> Sequence r -> String
+colorReplacedOccurrencesExceptFirst _ _ [] = "ε"
+colorReplacedOccurrencesExceptFirst (Replacement x ys) f (s:ss) = showSymbol s ++ concat (ss >>= (\x' -> if x == x' then map f (map showSymbol ys) else [showSymbol x']))
