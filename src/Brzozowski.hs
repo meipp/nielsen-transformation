@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+
 module Brzozowski where
 
 data Regex =
@@ -14,9 +16,9 @@ data Regex =
 delta :: Regex -> Regex
 delta Phi = Phi
 delta Lambda = Lambda
-delta (Symbol a) = Phi
+delta (Symbol _) = Phi
 delta (Concatenation p q) = if delta p == Lambda && delta q == Lambda then Lambda else Phi
-delta (Iterate p) = Lambda
+delta (Iterate _) = Lambda
 delta (Not p) = if delta p == Lambda then Phi else Lambda
 delta (And p q) = if delta p == Lambda && delta q == Lambda then Lambda else Phi
 delta (Or p q) = if delta p == Lambda || delta q == Lambda then Lambda else Phi
@@ -27,9 +29,9 @@ nullable p = delta p == Lambda
 impossible :: Regex -> Bool
 impossible Phi = True
 impossible Lambda = False
-impossible (Symbol a) = False
+impossible (Symbol _) = False
 impossible (Concatenation p q) = impossible p || impossible q
-impossible (Iterate p) = False
+impossible (Iterate _) = False
 
 -- TODO is this correct?
 impossible (Not p) = if impossible p then False else undefined
@@ -38,8 +40,8 @@ impossible (And p q) = impossible p || impossible q
 impossible (Or p q) = impossible p && impossible q
 
 deriveSymbol :: Char -> Regex -> Regex
-deriveSymbol a Phi = Phi
-deriveSymbol a Lambda = Phi
+deriveSymbol _ Phi = Phi
+deriveSymbol _ Lambda = Phi
 deriveSymbol a (Symbol b) = if a == b then Lambda else Phi
 deriveSymbol a (Concatenation p q) = Or (Concatenation (deriveSymbol a p) q) (Concatenation (delta p) (deriveSymbol a q))
 deriveSymbol a (Iterate p) = Concatenation (deriveSymbol a p) (Iterate p)
@@ -79,8 +81,8 @@ simplify (And _ Phi) = Phi
 simplify (And p q) = And (simplify p) (simplify q)
 simplify (Or Phi p) = simplify p
 simplify (Or p Phi) = simplify p
-simplify (Or (Not Phi) p) = Not Phi
-simplify (Or p (Not Phi)) = Not Phi
+simplify (Or (Not Phi) _) = Not Phi
+simplify (Or _ (Not Phi)) = Not Phi
 simplify (Or p q) = Or (simplify p) (simplify q)
 
 fullSimplify :: Regex -> Regex
@@ -110,4 +112,4 @@ length' (Or p q) = length' p + length' q + 1
 i :: Regex
 i = Not Phi
 
-r1 = And (Concatenation i (Concatenation (Symbol '1') (Concatenation (Symbol '1') (Concatenation (Symbol '1') i)))) (Not (Or (Concatenation i (Concatenation (Symbol '0') (Symbol '1')))(Concatenation (Symbol '1') (Iterate (Symbol '1')))))
+-- r1 = And (Concatenation i (Concatenation (Symbol '1') (Concatenation (Symbol '1') (Concatenation (Symbol '1') i)))) (Not (Or (Concatenation i (Concatenation (Symbol '0') (Symbol '1')))(Concatenation (Symbol '1') (Iterate (Symbol '1')))))
