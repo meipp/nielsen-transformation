@@ -10,7 +10,8 @@ module NielsenTransformation where
 
 import Data.Function (on)
 import Data.List (intercalate, nub)
-import Debug.Trace (trace)
+import Data.Maybe (mapMaybe)
+import Debug.Trace (trace, traceShow)
 import Prelude hiding (Either (..))
 
 data Symbol r = Terminal Char
@@ -157,10 +158,22 @@ listOr xs _  = xs
 nielsen :: (NielsenTransformable r, Eq r) => Equation r -> Bool
 nielsen e = case nielsenTransformation [Start e] of
     []    -> False
-    (t:_) -> trace ("trace: " ++ showRewrites (reverse (backtrace t))) True
+    (t:_) -> trace ("trace: " ++ showRewrites bt) (traceShow (extractSolutionVariablePrefixes (map (\(_, o, _) -> o) bt)) True)
+        where bt = (reverse (backtrace t))
 
 showRewrite :: NielsenTransformable r => (Equation r, RewriteOperation, Equation r) -> String
 showRewrite (e1, o, e2) = showEquation e1 ++ " [" ++ show o ++ "] " ++ showEquation e2
 
 showRewrites :: NielsenTransformable r => [(Equation r, RewriteOperation, Equation r)] -> String
 showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]"
+
+extractSolutionVariablePrefixes :: [RewriteOperation] -> [(Char, Char)]
+extractSolutionVariablePrefixes = mapMaybe variablePrefix
+
+
+variablePrefix :: RewriteOperation -> Maybe (Char, Char)
+variablePrefix DeleteTerminalPrefix = Nothing
+variablePrefix DeleteVariablePrefix = Nothing
+variablePrefix (VariableIsEmpty side x) = Just (x, 'ε')
+variablePrefix (VariableStartsWithTerminal side x a) = Just (x, a)
+variablePrefix (VariableStartsWithVariable side x y) = Just (x, y)
