@@ -28,4 +28,7 @@ executable nielsen-transformation
                        -Wpartial-fields
                        -Wredundant-constraints
   other-modules:       NielsenTransformation,
-                       StandardNT
+                       StandardNT,
+                       Color,
+                       Or,
+                       Brzozowski
