@@ -110,19 +110,51 @@ onBothSides r e = r e ++ map swap (r (swap e))
 -- onBothSides = id
 -- onBothSides = error "onBothSides is not defined"
 
+with_aa :: ((Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_aa f ((Left a):α :=: (Left b):β)
+    | a == b = f (a, (α, β))
+    | otherwise = []
+with_aa _ _ = []
+
+with_xx :: Eq r => ((Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xx f ((Right x):α :=: (Right y):β)
+    | x == y = f (x, (α, β))
+    | otherwise = []
+with_xx _ _ = []
+
+with_xε :: (((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xε f ((Right x):α :=: β)
+    -- TODO: only if x nullable
+    | True = f ((x, α), ((), β))
+with_xε _ _ = []
+
+with_xa :: (((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xa f ((Right x):α :=: (Left a):β)
+    -- TODO: only if x can start with a
+    | True = f ((x, α), (a, β))
+with_xa _ _ = []
+
+with_xy :: Eq r => (((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xy f ((Right x):α :=: (Right y):β)
+    -- TODO: only if x can be satisfied
+    -- TODO: only if y can be satisfied
+    | x /= y = f ((x, α), (y, β))
+    | otherwise = []
+with_xy _ _ = []
+
 class NielsenTransformable r where
     -- rule 1
-    aa :: RewriteRule (Equation r)
-    xx :: RewriteRule (Equation r)
+    aa :: (Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]
+    xx :: (Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]
 
     -- rule 2
-    xε :: RewriteRule (Equation r)
+    xε :: ((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation)]
 
     -- rule 3
-    xa :: RewriteRule (Equation r)
+    xa :: ((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation)]
 
     -- rule 4
-    xy :: RewriteRule (Equation r)
+    xy :: ((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation)]
 
     -- prerequisites
     nullable :: Symbol r -> Bool
@@ -153,11 +185,11 @@ nielsenTransformation [] = []
 nielsenTransformation ts = trace (showEquations es) (filter (\t -> value t == (ε :=: ε)) ts `listOr` nielsenTransformation (nub (rewriteTraces rewriteRules ts)))
     where es = map value ts
           rewriteRules = [
-                aa,
-                xx,
-                onBothSides xε,
-                onBothSides xa,
-                onBothSides xy
+                with_aa aa,
+                with_xx xx,
+                onBothSides (with_xε xε),
+                onBothSides (with_xa xa),
+                onBothSides (with_xy xy)
             ]
 
 listOr :: [a] -> [a] -> [a]
