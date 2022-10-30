@@ -70,7 +70,7 @@ instance ToSequence (Sequence r) r where
 (·) :: (ToSequence a r, ToSequence b r) => a -> b -> Sequence r
 α · β = toSequence α ++ toSequence β
 
-data Trace a = Start a | Rewrite (Trace a) RewriteOperation a
+data Trace r = Start (Equation r) | Rewrite (Trace r) (RewriteOperation r) (Equation r)
 
 -- This loses some solutions
 -- if we would just derive Eq the Trace history would play into (==), blowing up the nub call in nielsenTransformation
@@ -79,22 +79,22 @@ instance Eq a => Eq (Trace a) where
 
 data Side = Left' | Right' deriving (Eq, Show)
 
-data RewriteOperation = DeleteTerminalPrefix
-                      | DeleteVariablePrefix
-                      | VariableIsEmpty Side Char
-                      | VariableStartsWithTerminal Side Char Char
-                      | VariableStartsWithVariable Side Char Char
-                      deriving (Eq, Show)
+data RewriteOperation r = DeleteTerminalPrefix
+                        | DeleteVariablePrefix
+                        | VariableIsEmpty Side Char
+                        | VariableStartsWithTerminal Side Char Char
+                        | VariableStartsWithVariable Side Char Char
+                        deriving (Eq, Show)
 
-value :: Trace a -> a
+value :: Trace r -> Equation r
 value (Start x) = x
 value (Rewrite _ _ x) = x
 
-backtrace :: Trace a -> [(a, RewriteOperation, a)]
+backtrace :: Trace r -> [(Equation r, RewriteOperation r, Equation r)]
 backtrace (Start _) = []
 backtrace (Rewrite r o x) = (value r, o, x) : backtrace r
 
-type RewriteRule a = a -> [(a, RewriteOperation)]
+type RewriteRule r = Equation r -> [(Equation r, RewriteOperation r)]
 
 rewriteTrace :: RewriteRule a -> Trace a -> [Trace a]
 rewriteTrace rule t = map newTrace (rule (value t))
@@ -120,44 +120,44 @@ instance Swap Side where
     swap Left' = Right'
     swap Right' = Left'
 
-instance Swap RewriteOperation where
+instance Swap (RewriteOperation r) where
     swap DeleteTerminalPrefix = DeleteTerminalPrefix
     swap DeleteVariablePrefix = DeleteVariablePrefix
     swap (VariableIsEmpty side x) = VariableIsEmpty (swap side) x
     swap (VariableStartsWithTerminal side x a) = VariableStartsWithTerminal (swap side) x a
     swap (VariableStartsWithVariable side x y) = VariableStartsWithVariable (swap side) x y
 
-onBothSides :: RewriteRule (Equation r) -> RewriteRule (Equation r)
+onBothSides :: RewriteRule r -> RewriteRule r
 onBothSides r e = r e ++ map swap (r (swap e))
     -- where swap (α :=: β) = (β :=: α)
 -- onBothSides = id
 -- onBothSides = error "onBothSides is not defined"
 
-with_aa :: ((Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_aa :: ((Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
 with_aa f ((Left a):α :=: (Left b):β)
     | a == b = f (a, (α, β))
     | otherwise = []
 with_aa _ _ = []
 
-with_xx :: Eq r => ((Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xx :: Eq r => ((Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
 with_xx f ((Right x):α :=: (Right y):β)
     | x == y = f (x, (α, β))
     | otherwise = []
 with_xx _ _ = []
 
-with_xε :: (((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xε :: (((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
 with_xε f ((Right x):α :=: β)
     -- TODO: only if x nullable
     | True = f ((x, α), ((), β))
 with_xε _ _ = []
 
-with_xa :: (((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xa :: (((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
 with_xa f ((Right x):α :=: (Left a):β)
     -- TODO: only if x can start with a
     | True = f ((x, α), (a, β))
 with_xa _ _ = []
 
-with_xy :: Eq r => (((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation)]) -> RewriteRule (Equation r)
+with_xy :: Eq r => (((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
 with_xy f ((Right x):α :=: (Right y):β)
     -- TODO: only if x can be satisfied
     -- TODO: only if y can be satisfied
@@ -167,17 +167,17 @@ with_xy _ _ = []
 
 class NielsenTransformable r where
     -- rule 1
-    aa :: (Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]
-    xx :: (Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation)]
+    aa :: (Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]
+    xx :: (Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]
 
     -- rule 2
-    xε :: ((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation)]
+    xε :: ((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation r)]
 
     -- rule 3
-    xa :: ((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation)]
+    xa :: ((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation r)]
 
     -- rule 4
-    xy :: ((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation)]
+    xy :: ((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation r)]
 
     -- prerequisites
     nullable :: Symbol r -> Bool
@@ -203,7 +203,7 @@ showEquation (α :=: β) = showSequence α ++ " = " ++ showSequence β
 showEquations :: NielsenTransformable r => [Equation r] -> String
 showEquations es = "[" ++ intercalate ", " (map showEquation es) ++ "]"
 
-nielsenTransformation :: (NielsenTransformable r, Eq r) => [Trace (Equation r)] -> [Trace (Equation r)]
+nielsenTransformation :: (NielsenTransformable r, Eq r) => [Trace r] -> [Trace r]
 nielsenTransformation [] = []
 nielsenTransformation ts = trace (showEquations es) (filter (\t -> value t == (ε :=: ε)) ts `listOr` nielsenTransformation (nub (rewriteTraces rewriteRule ts)))
     where es = map value ts
@@ -229,16 +229,16 @@ nielsen e = case nielsenTransformation [Start e] of
         where bt = (reverse (backtrace t))
               operations = map (\(_, o, _) -> o) bt
 
-showRewrite :: NielsenTransformable r => (Equation r, RewriteOperation, Equation r) -> String
+showRewrite :: NielsenTransformable r => (Equation r, RewriteOperation r, Equation r) -> String
 showRewrite (e1, o, e2) = showEquation e1 ++ " [" ++ show o ++ "] " ++ showEquation e2
 
-showRewrites :: NielsenTransformable r => [(Equation r, RewriteOperation, Equation r)] -> String
+showRewrites :: NielsenTransformable r => [(Equation r, RewriteOperation r, Equation r)] -> String
 showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]"
 
-extractSolutionVariablePrefixes :: [RewriteOperation] -> [(Char, Char)]
+extractSolutionVariablePrefixes :: [RewriteOperation r] -> [(Char, Char)]
 extractSolutionVariablePrefixes = mapMaybe variablePrefix
 
-extractSolution :: [RewriteOperation] -> [(Char, String)]
+extractSolution :: [RewriteOperation r] -> [(Char, String)]
 extractSolution os = variables
     where prefixes = extractSolutionVariablePrefixes os
           variables = groups prefixes
@@ -260,7 +260,7 @@ showIndentedList :: (a -> String) -> [a] -> String
 showIndentedList _ [] = "[]"
 showIndentedList f xs = intercalate "\n" (["["] ++ map ("    " ++) (map f xs) ++ ["]"])
 
-variablePrefix :: RewriteOperation -> Maybe (Char, Char)
+variablePrefix :: RewriteOperation r -> Maybe (Char, Char)
 variablePrefix DeleteTerminalPrefix = Nothing
 variablePrefix DeleteVariablePrefix = Nothing
 variablePrefix (VariableIsEmpty side x) = Just (x, 'ε')
