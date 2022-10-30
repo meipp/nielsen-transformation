@@ -11,15 +11,15 @@ instance NielsenTransformable () where
 
     xx (_, (α, β)) = [(α :=: β, DeleteVariablePrefix)]
 
-    xε ((x@(Variable xx _), α), ((), β)) = [(φ α :=: φ β, VariableIsEmpty Left' xx)]
+    xε ((x, α), ((), β)) = [(φ α :=: φ β, VariableIsEmpty Left' x)]
         where φ = replace x ε
 
-    xa ((x@(Variable xx _), α), (a@(Terminal aa), β))
-        = [(x · φ α :=: φ β, VariableStartsWithTerminal Left' xx aa)]
+    xa ((x, α), (a, β))
+        = [(x · φ α :=: φ β, VariableStartsWithTerminal Left' x a)]
         where φ = replace x (a · x)
 
-    xy ((x@(Variable xx _), α), (y@(Variable yy _), β))
-        = [(x · φ1 α :=: φ1 β, VariableStartsWithVariable Left' xx yy), (φ2 α :=: y · φ2 β, VariableStartsWithVariable Right' yy xx)]
+    xy ((x, α), (y, β))
+        = [(x · φ1 α :=: φ1 β, VariableStartsWithVariable Left' x y), (φ2 α :=: y · φ2 β, VariableStartsWithVariable Right' y y)]
         where φ1 = replace x (y·x)
               φ2 = replace y (x·y)
 

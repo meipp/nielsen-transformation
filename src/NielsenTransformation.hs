@@ -8,7 +8,7 @@
 
 module NielsenTransformation where
 
-import Data.Bifunctor (first)
+import Data.Bifunctor (first, second)
 import Data.Either (Either (..))
 import Data.Function (on)
 import Data.List (groupBy, intercalate, nub, sortOn)
@@ -17,10 +17,10 @@ import Debug.Trace (trace, traceShow)
 import Prelude hiding (Either (..))
 
 newtype Terminal = Terminal Char
-    deriving Eq
+    deriving (Eq, Show)
 
 data Variable r = Variable Char r
-    deriving Eq
+    deriving (Eq, Ord, Show)
 
 type Symbol r = Either Terminal (Variable r)
 
@@ -81,9 +81,9 @@ data Side = Left' | Right' deriving (Eq, Show)
 
 data RewriteOperation r = DeleteTerminalPrefix
                         | DeleteVariablePrefix
-                        | VariableIsEmpty Side Char
-                        | VariableStartsWithTerminal Side Char Char
-                        | VariableStartsWithVariable Side Char Char
+                        | VariableIsEmpty Side (Variable r)
+                        | VariableStartsWithTerminal Side (Variable r) Terminal
+                        | VariableStartsWithVariable Side (Variable r) (Variable r)
                         deriving (Eq, Show)
 
 value :: Trace r -> Equation r
@@ -219,29 +219,29 @@ listOr :: [a] -> [a] -> [a]
 listOr [] ys = ys
 listOr xs _  = xs
 
-nielsen :: (NielsenTransformable r, Eq r) => Equation r -> Bool
+nielsen :: (NielsenTransformable r, Eq r, Ord r, Show r) => Equation r -> Bool
 nielsen e = case nielsenTransformation [Start e] of
     []    -> False
     (t:_) -> trace ("trace: " ++ showRewrites bt) $
-             traceShow (extractSolutionVariablePrefixes operations) $
-             trace ("solution: " ++ showIndentedList showSolution (extractSolution operations)) $
+            --  traceShow (extractSolutionVariablePrefixes operations) $
+             trace ("solution: " ++ showIndentedList (\(Variable v _, s) -> v : " = " ++ showSequence s) (extractSolution operations)) $
              True
         where bt = (reverse (backtrace t))
               operations = map (\(_, o, _) -> o) bt
 
-showRewrite :: NielsenTransformable r => (Equation r, RewriteOperation r, Equation r) -> String
+showRewrite :: (Show r, NielsenTransformable r) => (Equation r, RewriteOperation r, Equation r) -> String
 showRewrite (e1, o, e2) = showEquation e1 ++ " [" ++ show o ++ "] " ++ showEquation e2
 
-showRewrites :: NielsenTransformable r => [(Equation r, RewriteOperation r, Equation r)] -> String
+showRewrites :: (Show r, NielsenTransformable r) => [(Equation r, RewriteOperation r, Equation r)] -> String
 showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]"
 
-extractSolutionVariablePrefixes :: [RewriteOperation r] -> [(Char, Char)]
+extractSolutionVariablePrefixes :: [RewriteOperation r] -> [(Variable r, Sequence r)]
 extractSolutionVariablePrefixes = mapMaybe variablePrefix
 
-extractSolution :: [RewriteOperation r] -> [(Char, String)]
+extractSolution :: Ord r => [RewriteOperation r] -> [(Variable r, Sequence r)]
 extractSolution os = variables
     where prefixes = extractSolutionVariablePrefixes os
-          variables = groups prefixes
+          variables = map (second concat) $ groups prefixes
 
 groups :: Ord a => [(a, b)] -> [(a, [b])]
 groups xs = map (first head) $ map unzip $ groupOn fst $ sortOn fst xs
@@ -260,9 +260,9 @@ showIndentedList :: (a -> String) -> [a] -> String
 showIndentedList _ [] = "[]"
 showIndentedList f xs = intercalate "\n" (["["] ++ map ("    " ++) (map f xs) ++ ["]"])
 
-variablePrefix :: RewriteOperation r -> Maybe (Char, Char)
+variablePrefix :: RewriteOperation r -> Maybe (Variable r, Sequence r)
 variablePrefix DeleteTerminalPrefix = Nothing
 variablePrefix DeleteVariablePrefix = Nothing
-variablePrefix (VariableIsEmpty side x) = Just (x, 'ε')
-variablePrefix (VariableStartsWithTerminal side x a) = Just (x, a)
-variablePrefix (VariableStartsWithVariable side x y) = Just (x, y)
+variablePrefix (VariableIsEmpty side x) = Just (x, ε)
+variablePrefix (VariableStartsWithTerminal side x a) = Just (x, toSequence a)
+variablePrefix (VariableStartsWithVariable side x y) = Just (x, toSequence y)
