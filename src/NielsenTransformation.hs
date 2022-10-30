@@ -231,10 +231,24 @@ showEquation (α :=: β) = showSequence α ++ " = " ++ showSequence β
 showEquations :: NielsenTransformable r => [Equation r] -> String
 showEquations es = "[" ++ intercalate ", " (map showEquation es) ++ "]"
 
-nielsenTransformation :: (NielsenTransformable r, Eq r) => [Trace r] -> [Trace r]
-nielsenTransformation [] = []
-nielsenTransformation ts = trace (showEquations es) (filter (\t -> value t == (ε :=: ε)) ts `listOr` nielsenTransformation (nub (rewriteTraces rewriteRule ts)))
-    where es = map value ts
+-- hangs up
+-- nielsenTransformation :: (NielsenTransformable r, Eq r) => [Trace r] -> [Trace r]
+-- nielsenTransformation [] = []
+-- nielsenTransformation ts = trace (showEquations es) (filter (\t -> value t == (ε :=: ε)) ts `listOr` nielsenTransformation (nub (rewriteTraces rewriteRule ts)))
+--     where es = map value ts
+--           rewriteRule = joinRewriteRules [
+--                 with_aa aa,
+--                 with_xx xx,
+--                 onBothSides (with_xε xε),
+--                 onBothSides (with_xa xa),
+--                 onBothSides (with_xy xy)
+--             ]
+
+nielsenTransformationBFS :: (NielsenTransformable r, Eq r) => [Trace r] -> [Trace r] -> [Trace r]
+nielsenTransformationBFS _ [] = []
+nielsenTransformationBFS old new = trace (showEquations es) $
+    (filter (\t -> value t == (ε :=: ε)) new `listOr` nielsenTransformationBFS (old ++ new) nextGeneration)
+    where es = map value new
           rewriteRule = joinRewriteRules [
                 with_aa aa,
                 with_xx xx,
@@ -242,14 +256,15 @@ nielsenTransformation ts = trace (showEquations es) (filter (\t -> value t == (�
                 onBothSides (with_xa xa),
                 onBothSides (with_xy xy)
             ]
+          nextGeneration = rewriteTraces rewriteRule new `without` (old ++ new)
 
 listOr :: [a] -> [a] -> [a]
 listOr [] ys = ys
 listOr xs _  = xs
 
 nielsen :: (NielsenTransformable r, Eq r, Ord r, Show r) => Equation r -> Bool
-nielsen e = case nielsenTransformation [Start e] of
-    []    -> False
+nielsen e = case (nielsenTransformationBFS [] [Start e]) of
+    []    -> trace "[]" False
     (t:_) -> trace ("trace: " ++ showRewrites bt) $
             --  traceShow (extractSolutionVariablePrefixes operations) $
              trace ("solution: " ++ showIndentedList (\(Variable v _, s) -> v : " = " ++ showSequence s) (extractSolution operations)) $
