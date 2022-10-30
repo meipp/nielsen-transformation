@@ -95,6 +95,18 @@ applyRewriteOperation (VariableStartsWithTerminal _ _ _ (Replacement x ys)) (α 
 applyRewriteOperation (VariableStartsWithVariable _ _ _ (Replacement x ys)) (α :=: β) = replace x ys α :=: replace x ys β
 applyRewriteOperation _ _ = undefined
 
+showRewriteOperation :: (Eq r, NielsenTransformable r) => RewriteOperation r -> Equation r -> String
+showRewriteOperation o e1 = case o of
+        DeleteTerminalPrefix -> liftToEquation (colorPrefix red) e1 ++ " -> " ++ showEquation e2
+        DeleteVariablePrefix -> liftToEquation (colorPrefix red) e1 ++ " -> " ++ showEquation e2
+        VariableIsEmpty _ x _ -> liftToEquation (colorOccurrences x red) e1 ++ " -> " ++ showEquation e2
+        VariableStartsWithTerminal _ x _ r -> liftToEquation (colorOccurrences x yellow) e1
+            ++ " -> " ++ liftToEquation (colorReplacedOccurrences r yellow) e1
+        VariableStartsWithVariable _ x _ r -> liftToEquation (colorOccurrences x yellow) e1
+            ++ " -> " ++ liftToEquation (colorReplacedOccurrences r yellow) e1
+        -- _ -> undefined
+    where e2 = applyRewriteOperation o e1
+
 data Replacement r = Replacement (Symbol r) (Sequence r)
     deriving (Eq, Show)
 
@@ -246,24 +258,7 @@ nielsen e = case nielsenTransformation [Start e] of
               operations = map (\(_, o, _) -> o) bt
 
 showRewrite :: (Eq r, Show r, NielsenTransformable r) => (Equation r, RewriteOperation r, Equation r) -> String
-showRewrite (α :=: β, o@DeleteTerminalPrefix, e2)
-    = --show o ++ " | " ++
-        colorPrefix red α ++ " = " ++ colorPrefix red β ++ " -> " ++ showEquation e2
-showRewrite (α :=: β, o@DeleteVariablePrefix, e2)
-    = --show o ++ " | " ++
-        colorPrefix red α ++ " = " ++ colorPrefix red β ++ " -> " ++ showEquation e2
-showRewrite (α :=: β, o@(VariableIsEmpty _ x (Replacement _ _)), e2)
-    = show o ++ " | " ++
-        colorOccurrences x red α ++ " = " ++ colorOccurrences x red β ++ " -> " ++ showEquation e2
--- showRewrite (α :=: β, o@(VariableStartsWithTerminal _ x _ replacement), _)
---     = show o ++ " | " ++
---         colorOccurrencesExceptFirst x yellow α ++ " = " ++ colorOccurrencesExceptFirst x yellow β
---     ++ " -> " ++ colorReplacedOccurrencesExceptFirst replacement yellow α  ++ " = " ++ colorReplacedOccurrencesExceptFirst replacement yellow β
--- showRewrite (α :=: β, o@(VariableStartsWithVariable _ x _ replacement), _)
---     = show o ++ " | " ++
---         colorOccurrencesExceptFirst x yellow α ++ " = " ++ colorOccurrencesExceptFirst x yellow β
---     ++ " -> " ++ colorReplacedOccurrencesExceptFirst replacement yellow α  ++ " = " ++ colorReplacedOccurrencesExceptFirst replacement yellow β
-showRewrite (e1, o, e2) = showEquation e1 ++ " [" ++ show o ++ "] " ++ showEquation e2
+showRewrite (e1, o, e2) = trace ("showing e1: [" ++ showEquation e1 ++ "]") showRewriteOperation o e1
 
 showRewrites :: (Eq r, Show r, NielsenTransformable r) => [(Equation r, RewriteOperation r, Equation r)] -> String
 showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]"
@@ -300,6 +295,9 @@ variablePrefix (VariableIsEmpty side x _) = Just (x, ε)
 variablePrefix (VariableStartsWithTerminal side x a _) = Just (x, toSequence a)
 variablePrefix (VariableStartsWithVariable side x y _) = Just (x, toSequence y)
 
+liftToEquation :: (Sequence r -> String) -> Equation r -> String
+liftToEquation f (α :=: β) = f α ++ " = " ++ f β
+
 colorPrefix :: NielsenTransformable r => (String -> String) -> Sequence r -> String
 colorPrefix _ []     = error "Sequence cannot be empty"
 colorPrefix f (x:xs) = concat (f (showSymbol x) : map showSymbol xs)
@@ -308,6 +306,10 @@ colorOccurrences :: (Eq r, NielsenTransformable r, ToSymbol a r) => a -> (String
 colorOccurrences _ _ [] = "ε"
 colorOccurrences x f s = concat (map (\y -> if toSymbol x == y then f (showSymbol y) else showSymbol y) s)
 
+colorReplacedOccurrences :: (Eq r, NielsenTransformable r) => Replacement r -> (String -> String) -> Sequence r -> String
+colorReplacedOccurrences _ _ [] = "ε"
+colorReplacedOccurrences (Replacement x ys) f ss = concat (ss >>= (\x' -> if x == x' then map f (map showSymbol ys) else [showSymbol x']))
+
 colorOccurrencesExceptFirst :: (Eq r, NielsenTransformable r, ToSymbol a r) => a -> (String -> String) -> Sequence r -> String
 colorOccurrencesExceptFirst _ _ [] = "ε"
 colorOccurrencesExceptFirst x f (s:ss) = showSymbol s ++ concat (map (\y -> if toSymbol x == y then f (showSymbol y) else showSymbol y) ss)
@@ -315,3 +317,6 @@ colorOccurrencesExceptFirst x f (s:ss) = showSymbol s ++ concat (map (\y -> if t
 colorReplacedOccurrencesExceptFirst :: (Eq r, NielsenTransformable r) => Replacement r -> (String -> String) -> Sequence r -> String
 colorReplacedOccurrencesExceptFirst _ _ [] = "ε"
 colorReplacedOccurrencesExceptFirst (Replacement x ys) f (s:ss) = showSymbol s ++ concat (ss >>= (\x' -> if x == x' then map f (map showSymbol ys) else [showSymbol x']))
+
+without :: Eq a => [a] -> [a] -> [a]
+without xs ys = filter (\x -> not (x `elem` ys)) xs
