@@ -33,4 +33,5 @@ executable nielsen-transformation
                        Example,
                        Color,
                        Or,
-                       Brzozowski
+                       Brzozowski,
+                       BrzozowskiNT
