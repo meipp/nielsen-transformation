@@ -87,6 +87,14 @@ data RewriteOperation r = DeleteTerminalPrefix
                         | VariableStartsWithVariable Side (Variable r) (Variable r) (Replacement r)
                         deriving (Eq, Show)
 
+applyRewriteOperation :: Eq r => RewriteOperation r -> Equation r -> Equation r
+applyRewriteOperation DeleteTerminalPrefix ((Left _):α :=: (Left _):β) = α :=: β
+applyRewriteOperation DeleteVariablePrefix ((Right _):α :=: (Right _):β) = α :=: β
+applyRewriteOperation (VariableIsEmpty _ _ (Replacement x ys)) (α :=: β) = replace x ys α :=: replace x ys β
+applyRewriteOperation (VariableStartsWithTerminal _ _ _ (Replacement x ys)) (α :=: β) = replace x ys α :=: replace x ys β
+applyRewriteOperation (VariableStartsWithVariable _ _ _ (Replacement x ys)) (α :=: β) = replace x ys α :=: replace x ys β
+applyRewriteOperation _ _ = undefined
+
 data Replacement r = Replacement (Symbol r) (Sequence r)
     deriving (Eq, Show)
 
@@ -98,13 +106,15 @@ backtrace :: Trace r -> [(Equation r, RewriteOperation r, Equation r)]
 backtrace (Start _) = []
 backtrace (Rewrite r o x) = (value r, o, x) : backtrace r
 
-type RewriteRule r = Equation r -> [(Equation r, RewriteOperation r)]
+type RewriteRule r = Equation r -> [RewriteOperation r]
 
-rewriteTrace :: RewriteRule a -> Trace a -> [Trace a]
-rewriteTrace rule t = map newTrace (rule (value t))
-    where newTrace (e, o) = Rewrite t o e
+rewriteTrace :: Eq a => RewriteRule a -> Trace a -> [Trace a]
+rewriteTrace rule t = map newTrace esos
+    where os = rule (value t)
+          esos = map (\o -> (applyRewriteOperation o (value t), o)) os
+          newTrace (e, o) = Rewrite t o e
 
-rewriteTraces :: RewriteRule a -> [Trace a] -> [Trace a]
+rewriteTraces :: Eq a => RewriteRule a -> [Trace a] -> [Trace a]
 rewriteTraces rule xs = xs >>= rewriteTrace rule
 
 joinRewriteRules :: [RewriteRule a] -> RewriteRule a
@@ -137,31 +147,31 @@ onBothSides r e = r e ++ map swap (r (swap e))
 -- onBothSides = id
 -- onBothSides = error "onBothSides is not defined"
 
-with_aa :: ((Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
+with_aa :: ((Terminal, (Sequence r, Sequence r)) -> [RewriteOperation r]) -> RewriteRule r
 with_aa f ((Left a):α :=: (Left b):β)
     | a == b = f (a, (α, β))
     | otherwise = []
 with_aa _ _ = []
 
-with_xx :: Eq r => ((Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
+with_xx :: Eq r => ((Variable r, (Sequence r, Sequence r)) -> [RewriteOperation r]) -> RewriteRule r
 with_xx f ((Right x):α :=: (Right y):β)
     | x == y = f (x, (α, β))
     | otherwise = []
 with_xx _ _ = []
 
-with_xε :: (((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
+with_xε :: (((Variable r, Sequence r), ((), Sequence r)) -> [RewriteOperation r]) -> RewriteRule r
 with_xε f ((Right x):α :=: β)
     -- TODO: only if x nullable
     | True = f ((x, α), ((), β))
 with_xε _ _ = []
 
-with_xa :: (((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
+with_xa :: (((Variable r, Sequence r), (Terminal, Sequence r)) -> [RewriteOperation r]) -> RewriteRule r
 with_xa f ((Right x):α :=: (Left a):β)
     -- TODO: only if x can start with a
     | True = f ((x, α), (a, β))
 with_xa _ _ = []
 
-with_xy :: Eq r => (((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation r)]) -> RewriteRule r
+with_xy :: Eq r => (((Variable r, Sequence r), (Variable r, Sequence r)) -> [RewriteOperation r]) -> RewriteRule r
 with_xy f ((Right x):α :=: (Right y):β)
     -- TODO: only if x can be satisfied
     -- TODO: only if y can be satisfied
@@ -171,17 +181,17 @@ with_xy _ _ = []
 
 class NielsenTransformable r where
     -- rule 1
-    aa :: (Terminal, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]
-    xx :: (Variable r, (Sequence r, Sequence r)) -> [(Equation r, RewriteOperation r)]
+    aa :: (Terminal, (Sequence r, Sequence r)) -> [RewriteOperation r]
+    xx :: (Variable r, (Sequence r, Sequence r)) -> [RewriteOperation r]
 
     -- rule 2
-    xε :: ((Variable r, Sequence r), ((), Sequence r)) -> [(Equation r, RewriteOperation r)]
+    xε :: ((Variable r, Sequence r), ((), Sequence r)) -> [RewriteOperation r]
 
     -- rule 3
-    xa :: ((Variable r, Sequence r), (Terminal, Sequence r)) -> [(Equation r, RewriteOperation r)]
+    xa :: ((Variable r, Sequence r), (Terminal, Sequence r)) -> [RewriteOperation r]
 
     -- rule 4
-    xy :: ((Variable r, Sequence r), (Variable r, Sequence r)) -> [(Equation r, RewriteOperation r)]
+    xy :: ((Variable r, Sequence r), (Variable r, Sequence r)) -> [RewriteOperation r]
 
     -- prerequisites
     nullable :: Symbol r -> Bool
