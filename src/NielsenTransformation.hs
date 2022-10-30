@@ -266,7 +266,7 @@ nielsen e = case (nielsenTransformationBFS [] [Start e]) of
     []    -> trace "[]" False
     (t:_) -> trace ("trace: " ++ showRewrites bt) $
             --  traceShow (extractSolutionVariablePrefixes operations) $
-             trace ("solution: " ++ showIndentedList (\(Variable v _, s) -> v : " = " ++ showSequence s) (extractSolution operations)) $
+             trace ("solution: " ++ showIndentedList (\(v, s) -> v : " = " ++ showSequence s) (extractSolution operations)) $
              True
         where bt = (reverse (backtrace t))
               operations = map (\(_, o, _) -> o) bt
@@ -277,10 +277,10 @@ showRewrite (e1, o, _) = trace ("showing e1: [" ++ showEquation e1 ++ "]") showR
 showRewrites :: (Eq r, NielsenTransformable r) => [(Equation r, RewriteOperation r, Equation r)] -> String
 showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]"
 
-extractSolutionVariablePrefixes :: [RewriteOperation r] -> [(Variable r, Sequence r)]
+extractSolutionVariablePrefixes :: [RewriteOperation r] -> [(Char, Sequence r)]
 extractSolutionVariablePrefixes = mapMaybe variablePrefix
 
-extractSolution :: Ord r => [RewriteOperation r] -> [(Variable r, Sequence r)]
+extractSolution :: [RewriteOperation r] -> [(Char, Sequence r)]
 extractSolution os = variables
     where prefixes = extractSolutionVariablePrefixes os
           variables = map (second concat) $ groups prefixes
@@ -302,12 +302,12 @@ showIndentedList :: (a -> String) -> [a] -> String
 showIndentedList _ [] = "[]"
 showIndentedList f xs = intercalate "\n" (["["] ++ map ("    " ++) (map f xs) ++ ["]"])
 
-variablePrefix :: RewriteOperation r -> Maybe (Variable r, Sequence r)
+variablePrefix :: RewriteOperation r -> Maybe (Char, Sequence r)
 variablePrefix DeleteTerminalPrefix = Nothing
 variablePrefix DeleteVariablePrefix = Nothing
-variablePrefix (VariableIsEmpty _ x _) = Just (x, ε)
-variablePrefix (VariableStartsWithTerminal _ x a _) = Just (x, toSequence a)
-variablePrefix (VariableStartsWithVariable _ x y _) = Just (x, toSequence y)
+variablePrefix (VariableIsEmpty _ _ _) = Nothing
+variablePrefix (VariableStartsWithTerminal _ (Variable x _) a _) = Just (x, toSequence a)
+variablePrefix (VariableStartsWithVariable _ (Variable x _) y _) = Just (x, toSequence y)
 
 liftToEquation :: (Sequence r -> String) -> Equation r -> String
 liftToEquation f (α :=: β) = f α ++ " = " ++ f β
