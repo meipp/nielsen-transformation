@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -Wno-orphans -Wno-missing-export-lists #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module StandardNT where
 

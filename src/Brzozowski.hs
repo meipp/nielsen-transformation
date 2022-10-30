@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-missing-export-lists #-}
-
 module Brzozowski where
 
 data Regex =

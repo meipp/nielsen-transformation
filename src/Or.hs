@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-missing-export-lists #-}
-
 module Or where
 
 import Data.Bifunctor (Bifunctor(bimap))

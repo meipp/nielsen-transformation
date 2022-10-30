@@ -4,7 +4,6 @@
     FlexibleInstances,
     AllowAmbiguousTypes
 #-}
-{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
 module NielsenTransformation where
 
