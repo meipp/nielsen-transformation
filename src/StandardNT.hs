@@ -7,16 +7,16 @@ import Data.Either (Either (..))
 import NielsenTransformation
 
 instance NielsenTransformable () where
-    aa (_, (α, β)) = [DeleteTerminalPrefix]
+    aa (_, (_, _)) = [DeleteTerminalPrefix]
 
-    xx (_, (α, β)) = [DeleteVariablePrefix]
+    xx (_, (_, _)) = [DeleteVariablePrefix]
 
-    xε ((x, α), ((), β)) = [VariableIsEmpty Left' x (Replacement (toSymbol x) ε)]
+    xε ((x, _), ((), _)) = [VariableIsEmpty Left' x (Replacement (toSymbol x) ε)]
 
-    xa ((x, α), (a, β))
+    xa ((x, _), (a, _))
         = [VariableStartsWithTerminal Left' x a (Replacement (toSymbol x) (a · x))]
 
-    xy ((x, α), (y, β))
+    xy ((x, _), (y, _))
         = [VariableStartsWithVariable Left' x y (Replacement (toSymbol x) (y·x)), VariableStartsWithVariable Right' y x (Replacement (toSymbol y) (x·y))]
 
     nullable (Left (Terminal _))   = False
