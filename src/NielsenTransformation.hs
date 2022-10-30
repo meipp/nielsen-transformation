@@ -8,9 +8,10 @@
 
 module NielsenTransformation where
 
+import Data.Bifunctor (first)
 import Data.Either (Either (..))
 import Data.Function (on)
-import Data.List (groupBy, intercalate, nub)
+import Data.List (groupBy, intercalate, nub, sortOn)
 import Data.Maybe (mapMaybe)
 import Debug.Trace (trace, traceShow)
 import Prelude hiding (Either (..))
@@ -238,18 +239,11 @@ extractSolution os = variables
     where prefixes = extractSolutionVariablePrefixes os
           variables = groups prefixes
 
-groups :: Eq a => [(a, b)] -> [(a, [b])]
-groups xs = map restructureGroup $ groupBy ((==) `on` fst) xs
-    where
-        representative :: [(a, b)] -> a
-        representative [] = undefined
-        representative (((r, _):_)) = r
+groups :: Ord a => [(a, b)] -> [(a, [b])]
+groups xs = map (first head) $ map unzip $ groupOn fst $ sortOn fst xs
 
-        values :: [(a, b)] -> [b]
-        values = map snd
-
-        restructureGroup :: [(a, b)] -> (a, [b])
-        restructureGroup g = (representative g, values g)
+groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
+groupOn f = groupBy ((==) `on` f)
 
 -- showSolutions :: [(Char, String)] -> String
 -- showSolutions solutions = map showSolution
