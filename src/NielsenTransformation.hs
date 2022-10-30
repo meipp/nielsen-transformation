@@ -96,11 +96,15 @@ backtrace (Rewrite r o x) = (value r, o, x) : backtrace r
 
 type RewriteRule a = a -> [(a, RewriteOperation)]
 
-rewriteTrace :: [RewriteRule a] -> Trace a -> [Trace a]
-rewriteTrace rules t = map (\(e, o) -> Rewrite t o e) (rules >>= (\r -> r (value t)))
+rewriteTrace :: RewriteRule a -> Trace a -> [Trace a]
+rewriteTrace rule t = map newTrace (rule (value t))
+    where newTrace (e, o) = Rewrite t o e
 
-rewriteTraces :: [RewriteRule a] -> [Trace a] -> [Trace a]
-rewriteTraces rules xs = xs >>= rewriteTrace rules
+rewriteTraces :: RewriteRule a -> [Trace a] -> [Trace a]
+rewriteTraces rule xs = xs >>= rewriteTrace rule
+
+joinRewriteRules :: [RewriteRule a] -> RewriteRule a
+joinRewriteRules rs x = rs >>= ($ x)
 
 class Swap a where
     swap :: a -> a
@@ -201,9 +205,9 @@ showEquations es = "[" ++ intercalate ", " (map showEquation es) ++ "]"
 
 nielsenTransformation :: (NielsenTransformable r, Eq r) => [Trace (Equation r)] -> [Trace (Equation r)]
 nielsenTransformation [] = []
-nielsenTransformation ts = trace (showEquations es) (filter (\t -> value t == (ε :=: ε)) ts `listOr` nielsenTransformation (nub (rewriteTraces rewriteRules ts)))
+nielsenTransformation ts = trace (showEquations es) (filter (\t -> value t == (ε :=: ε)) ts `listOr` nielsenTransformation (nub (rewriteTraces rewriteRule ts)))
     where es = map value ts
-          rewriteRules = [
+          rewriteRule = joinRewriteRules [
                 with_aa aa,
                 with_xx xx,
                 onBothSides (with_xε xε),
