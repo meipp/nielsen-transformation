@@ -206,8 +206,8 @@ class NielsenTransformable r where
     xy :: ((Variable r, Sequence r), (Variable r, Sequence r)) -> [RewriteOperation r]
 
     -- prerequisites
-    nullable :: Symbol r -> Bool
-    satisfiable :: Symbol r -> Bool
+    nullable :: r -> Bool
+    satisfiable :: r -> Bool
     showSymbol :: Symbol r -> String
 
 replaceSymbol :: Eq r => Symbol r -> Sequence r -> Symbol r -> Sequence r
@@ -335,3 +335,6 @@ colorReplacedOccurrencesExceptFirst (Replacement x ys) f (s:ss) = showSymbol s +
 
 without :: Eq a => [a] -> [a] -> [a]
 without xs ys = filter (\x -> not (x `elem` ys)) xs
+
+alphabet :: [Char]
+alphabet = ['a', 'b']

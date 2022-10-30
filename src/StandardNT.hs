@@ -19,11 +19,9 @@ instance NielsenTransformable () where
     xy ((x, _), (y, _))
         = [VariableStartsWithVariable Left' x y (Replacement (toSymbol x) (y·x)), VariableStartsWithVariable Right' y x (Replacement (toSymbol y) (x·y))]
 
-    nullable (Left (Terminal _))   = False
-    nullable (Right (Variable _ _)) = True
+    nullable () = True
 
-    satisfiable (Left (Terminal _)) = True
-    satisfiable (Right (Variable _ _)) = True
+    satisfiable () = length alphabet /= 0
 
     showSymbol (Left (Terminal a)) = [a]
     showSymbol (Right (Variable x _)) = [x]
