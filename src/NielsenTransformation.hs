@@ -39,6 +39,18 @@ class CanBeEmpty a where
 instance CanBeEmpty (Sequence r) where
     ε = []
 
+class ToSymbol a r where
+    toSymbol :: a -> Symbol r
+
+instance ToSymbol Terminal r where
+    toSymbol = Left
+
+instance ToSymbol (Variable r) r where
+    toSymbol = Right
+
+instance ToSymbol (Symbol r) r where
+    toSymbol = id
+
 class ToSequence a r where
     toSequence :: a -> Sequence r
 
@@ -166,8 +178,8 @@ replaceSymbol x y x'
     | x == x' = y
     | otherwise = [x']
 
-replace :: Eq r => Symbol r -> Sequence r -> Sequence r -> Sequence r
-replace x y xs = xs >>= replaceSymbol x y
+replace :: (Eq r, ToSymbol a r) => a -> Sequence r -> Sequence r -> Sequence r
+replace x y xs = xs >>= replaceSymbol (toSymbol x) y
 
 
 showSequence :: NielsenTransformable r => Sequence r -> String
