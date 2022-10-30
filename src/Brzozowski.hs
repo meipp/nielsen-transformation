@@ -11,7 +11,7 @@ data Regex =
   | Not Regex
   | And Regex Regex
   | Or Regex Regex
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 delta :: Regex -> Regex
 delta Phi = Phi
@@ -48,6 +48,9 @@ deriveSymbol a (Iterate p) = Concatenation (deriveSymbol a p) (Iterate p)
 deriveSymbol a (Not p) = Not (deriveSymbol a p)
 deriveSymbol a (And p q) = And (deriveSymbol a p) (deriveSymbol a q)
 deriveSymbol a (Or p q) = Or (deriveSymbol a p) (deriveSymbol a q)
+
+deriveSymbol' :: Char -> Regex -> Regex
+deriveSymbol' a p = fullSimplify (deriveSymbol a p)
 
 deriveSequence :: [Char] -> Regex -> Regex
 deriveSequence [] p = p
