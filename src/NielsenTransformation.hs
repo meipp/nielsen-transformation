@@ -194,8 +194,10 @@ replaceSymbol x y x'
     | otherwise = [x']
 
 replace :: (Eq r, ToSymbol a r) => a -> Sequence r -> Sequence r -> Sequence r
-replace x y xs = xs >>= replaceSymbol (toSymbol x) y
+replace x = replaceMap id id (toSymbol x)
 
+replaceMap :: (Eq a) => (a -> b) -> (a -> b) -> a -> [a] -> [a] -> [b]
+replaceMap onReplace onNoReplace x replacement xs = xs >>= (\x' -> if x' == x then map onReplace replacement else map onNoReplace [x'])
 
 showSequence :: NielsenTransformable r => Sequence r -> String
 showSequence [] = "ε"
