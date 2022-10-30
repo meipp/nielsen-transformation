@@ -54,6 +54,12 @@ instance ToSymbol (Symbol r) r where
 class ToSequence a r where
     toSequence :: a -> Sequence r
 
+instance ToSequence Terminal r where
+    toSequence = return . toSymbol
+
+instance ToSequence (Variable r) r where
+    toSequence = return . toSymbol
+
 instance ToSequence (Symbol r) r where
     toSequence = return
 
