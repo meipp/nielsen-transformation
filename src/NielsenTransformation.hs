@@ -15,6 +15,8 @@ import Data.Maybe (mapMaybe)
 import Debug.Trace (trace)
 import Prelude hiding (Either (..))
 import Color
+import BFS
+import Util
 
 newtype Terminal = Terminal Char
     deriving (Eq, Show)
@@ -243,11 +245,9 @@ showEquations es = "[" ++ intercalate ", " (map showEquation es) ++ "]"
 --                 onBothSides (with_xy xy)
 --             ]
 
-nielsenTransformationBFS :: (NielsenTransformable r, Eq r) => [Trace r] -> [Trace r] -> [Trace r]
-nielsenTransformationBFS _ [] = []
-nielsenTransformationBFS old new = trace (showEquations es) $
-    (filter (\t -> value t == (ε :=: ε)) new `listOr` nielsenTransformationBFS (old ++ new) nextGeneration)
-    where es = map value new
+nielsenTransformationBFS :: (NielsenTransformable r, Eq r) => [Trace r] -> [[Trace r]]
+nielsenTransformationBFS startNodes = bfs traceFunction (\t -> value t == (ε :=: ε)) findNeighbors startNodes
+    where
           rewriteRule = joinRewriteRules [
                 with_aa aa,
                 with_xx xx,
@@ -255,17 +255,17 @@ nielsenTransformationBFS old new = trace (showEquations es) $
                 onBothSides (with_xa xa),
                 onBothSides (with_xy xy)
             ]
-          nextGeneration = rewriteTraces rewriteRule new `without` (old ++ new)
+          findNeighbors t = rewriteTraces rewriteRule [t]
+          traceFunction i ts = trace (show i ++ ": " ++ showEquations (map value ts)) ts
 
 listOr :: [a] -> [a] -> [a]
 listOr [] ys = ys
 listOr xs _  = xs
 
 nielsen :: (NielsenTransformable r, Ord r) => Equation r -> Bool
-nielsen e = case (nielsenTransformationBFS [] [Start e]) of
-    []    -> trace "[]" False
+nielsen e = case last (nielsenTransformationBFS [Start e]) of
+    []    -> False
     (t:_) -> trace ("trace: " ++ showRewrites bt) $
-            --  traceShow (extractSolutionVariablePrefixes operations) $
              trace ("solution: " ++ showIndentedList (\(v, s) -> v : " = " ++ showSequence s) (extractSolution operations)) $
              True
         where bt = (reverse (backtrace t))
@@ -331,9 +331,6 @@ colorOccurrencesExceptFirst x f (s:ss) = showSymbol s ++ concat (map (\y -> if t
 colorReplacedOccurrencesExceptFirst :: (Eq r, NielsenTransformable r) => Replacement r -> (String -> String) -> Sequence r -> String
 colorReplacedOccurrencesExceptFirst _ _ [] = "ε"
 colorReplacedOccurrencesExceptFirst (Replacement x ys) f (s:ss) = showSymbol s ++ concat (ss >>= (\x' -> if x == x' then map f (map showSymbol ys) else [showSymbol x']))
-
-without :: Eq a => [a] -> [a] -> [a]
-without xs ys = filter (\x -> not (x `elem` ys)) xs
 
 alphabet :: [Char]
 alphabet = ['a', 'b']
