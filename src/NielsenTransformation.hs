@@ -305,7 +305,7 @@ showIndentedList f xs = intercalate "\n" (["["] ++ map ("    " ++) (map f xs) ++
 variablePrefix :: RewriteOperation r -> Maybe (Char, Sequence r)
 variablePrefix DeleteTerminalPrefix = Nothing
 variablePrefix DeleteVariablePrefix = Nothing
-variablePrefix (VariableIsEmpty _ _ _) = Nothing
+variablePrefix (VariableIsEmpty _ (Variable x _) _) = Just (x, ε)
 variablePrefix (VariableStartsWithTerminal _ (Variable x _) a _) = Just (x, toSequence a)
 variablePrefix (VariableStartsWithVariable _ (Variable x _) y _) = Just (x, toSequence y)
 
