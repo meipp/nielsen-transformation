@@ -29,6 +29,8 @@ executable nielsen-transformation
                        -Wredundant-constraints
                        -Wno-missing-export-lists
   other-modules:       NielsenTransformation,
+                       Util,
+                       BFS,
                        StandardNT,
                        Example,
                        Color,
