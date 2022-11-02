@@ -30,6 +30,7 @@ executable nielsen-transformation
                        -Wno-missing-export-lists
   other-modules:       NielsenTransformation,
                        Util,
+                       Unsure,
                        BFS,
                        StandardNT,
                        Example,
