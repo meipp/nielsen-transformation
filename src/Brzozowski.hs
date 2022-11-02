@@ -115,5 +115,3 @@ length' (Or p q) = length' p + length' q + 1
 
 i :: Regex
 i = Not Phi
-
--- r1 = And (Concatenation i (Concatenation (Symbol '1') (Concatenation (Symbol '1') (Concatenation (Symbol '1') i)))) (Not (Or (Concatenation i (Concatenation (Symbol '0') (Symbol '1')))(Concatenation (Symbol '1') (Iterate (Symbol '1')))))

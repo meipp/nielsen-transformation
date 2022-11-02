@@ -16,7 +16,6 @@ import Debug.Trace (trace)
 import Prelude hiding (Either (..))
 import Color
 import BFS
-import Util
 
 newtype Terminal = Terminal Char
     deriving (Eq, Show)
@@ -272,7 +271,7 @@ nielsen e = case last (nielsenTransformationBFS [Start e]) of
               operations = map (\(_, o, _) -> o) bt
 
 showRewrite :: (Eq r, NielsenTransformable r) => (Equation r, RewriteOperation r, Equation r) -> String
-showRewrite (e1, o, _) = trace ("showing e1: [" ++ showEquation e1 ++ "]") showRewriteOperation o e1
+showRewrite (e1, o, _) = showRewriteOperation o e1
 
 showRewrites :: (Eq r, NielsenTransformable r) => [(Equation r, RewriteOperation r, Equation r)] -> String
 showRewrites es = "[\n    " ++ intercalate "\n    " (map showRewrite es) ++ "\n]"
