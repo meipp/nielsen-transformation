@@ -1,5 +1,7 @@
 module Brzozowski where
 
+import Unsure (unsure)
+
 data Regex =
     Phi
   | Lambda
@@ -32,7 +34,8 @@ impossible (Concatenation p q) = impossible p || impossible q
 impossible (Iterate _) = False
 
 -- TODO is this correct?
-impossible (Not p) = if impossible p then False else undefined
+-- impossible (Not p) = if impossible p then False else undefined
+impossible (Not _) = unsure False
 
 impossible (And p q) = impossible p || impossible q
 impossible (Or p q) = impossible p && impossible q
