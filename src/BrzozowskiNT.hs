@@ -28,11 +28,11 @@ instance NielsenTransformable Regex where
         | otherwise     = []
 
     xε ((x@(Variable _ p), _), ((), _))
-        | nullable p = [VariableIsEmpty Left' x (Replacement (toSymbol x) ε)]
+        | nullable p = [VariableIsEmpty left x (Replacement (toSymbol x) ε)]
         | otherwise  = []
 
     xa ((x@(Variable xc p), _), (Terminal a, _))
-        | satisfiable dap = [VariableStartsWithTerminal Left' x (Terminal a) (Replacement (toSymbol x) (Terminal a · x'))]
+        | satisfiable dap = [VariableStartsWithTerminal left x (Terminal a) (Replacement (toSymbol x) (Terminal a · x'))]
         | otherwise       = []
         where dap = deriveSymbol' a p
               x'  = Variable xc dap
@@ -43,12 +43,12 @@ instance NielsenTransformable Regex where
         = alphabet >>= helper
         where helper a
                 -- TODO is this correct?
-                | satisfiable dap && satisfiable daq = [VariableStartsWithTerminal Left' x ta (Replacement (toSymbol x) (ta · Variable xc dap))]
+                | satisfiable dap && satisfiable daq = [VariableStartsWithTerminal left x ta (Replacement (toSymbol x) (ta · Variable xc dap))]
                 | otherwise = []
                 where dap = deriveSymbol' a p
                       daq = deriveSymbol' a q
                       ta  = Terminal a
-        -- = [VariableStartsWithVariable Left' x y (Replacement (toSymbol x) (y·x)), VariableStartsWithVariable Right' y x (Replacement (toSymbol y) (x·y))]
+        -- = [VariableStartsWithVariable left x y (Replacement (toSymbol x) (y·x)), VariableStartsWithVariable right y x (Replacement (toSymbol y) (x·y))]
 
     nullable = Brzozowski.nullable
     satisfiable p = not (Brzozowski.impossible p) && length alphabet /= 0

@@ -1,3 +1,9 @@
 module Data.Side where
 
-data Side = Left' | Right' deriving (Eq, Show)
+type Side = Either () ()
+
+left :: Side
+left = Left ()
+
+right :: Side
+right = Right ()

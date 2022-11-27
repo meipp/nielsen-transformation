@@ -135,10 +135,6 @@ joinRewriteRules rs x = rs >>= ($ x)
 instance Swap (Equation r) where
     swap (α :=: β) = (β :=: α)
 
-instance Swap Side where
-    swap Left' = Right'
-    swap Right' = Left'
-
 instance Swap (RewriteOperation r) where
     swap DeleteTerminalPrefix = DeleteTerminalPrefix
     swap DeleteVariablePrefix = DeleteVariablePrefix

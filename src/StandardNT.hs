@@ -12,13 +12,13 @@ instance NielsenTransformable () where
 
     xx (_, (_, _)) = [DeleteVariablePrefix]
 
-    xε ((x, _), ((), _)) = [VariableIsEmpty Left' x (Replacement (toSymbol x) ε)]
+    xε ((x, _), ((), _)) = [VariableIsEmpty left x (Replacement (toSymbol x) ε)]
 
     xa ((x, _), (a, _))
-        = [VariableStartsWithTerminal Left' x a (Replacement (toSymbol x) (a · x))]
+        = [VariableStartsWithTerminal left x a (Replacement (toSymbol x) (a · x))]
 
     xy ((x, _), (y, _))
-        = [VariableStartsWithVariable Left' x y (Replacement (toSymbol x) (y·x)), VariableStartsWithVariable Right' y x (Replacement (toSymbol y) (x·y))]
+        = [VariableStartsWithVariable left x y (Replacement (toSymbol x) (y·x)), VariableStartsWithVariable right y x (Replacement (toSymbol y) (x·y))]
 
     nullable () = True
 
