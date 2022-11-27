@@ -8,6 +8,7 @@ import NielsenTransformation
 import Brzozowski (Regex (..), deriveSymbol')
 import qualified Brzozowski
 import Util.Unsure (unsure)
+import Data.Side
 
 showRegex :: Regex -> String
 showRegex Phi = "Ø"

@@ -5,6 +5,7 @@ module StandardNT where
 import Prelude hiding (Either (..))
 import Data.Either (Either (..))
 import NielsenTransformation
+import Data.Side
 
 instance NielsenTransformable () where
     aa (_, (_, _)) = [DeleteTerminalPrefix]

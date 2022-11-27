@@ -14,6 +14,7 @@ import Data.List (groupBy, intercalate, sortOn)
 import Data.Maybe (mapMaybe)
 import Debug.Trace (trace)
 import Prelude hiding (Either (..))
+import Data.Side
 import Util.Color
 import Util.BFS
 
@@ -77,8 +78,6 @@ data Trace r = Start (Equation r) | Rewrite (Trace r) (RewriteOperation r) (Equa
 -- if we would just derive Eq the Trace history would play into (==), blowing up the nub call in nielsenTransformation
 instance Eq a => Eq (Trace a) where
     (==) = (==) `on` value
-
-data Side = Left' | Right' deriving (Eq, Show)
 
 data RewriteOperation r = DeleteTerminalPrefix
                         | DeleteVariablePrefix
