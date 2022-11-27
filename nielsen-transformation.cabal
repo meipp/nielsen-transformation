@@ -32,7 +32,7 @@ executable nielsen-transformation
                        Util.Util,
                        Util.Unsure,
                        Util.BFS,
-                       StandardNT,
+                       NoRegex.NielsenTransformable,
                        Example,
                        Util.Color,
                        Data.Or,

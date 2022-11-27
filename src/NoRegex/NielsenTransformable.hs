@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module StandardNT where
+module NoRegex.NielsenTransformable where
 
 import Prelude hiding (Either (..))
 import Data.Either (Either (..))
