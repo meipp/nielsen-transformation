@@ -1,7 +1,7 @@
 module Example where
 
 import NielsenTransformation
-import Brzozowski
+import Brzozowski.Regex
 
 a :: Symbol ()
 a = Left (Terminal 'a')

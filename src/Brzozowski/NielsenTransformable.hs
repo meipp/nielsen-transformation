@@ -1,12 +1,12 @@
 {-# OPTIONS_GHC  -Wno-orphans #-}
 
-module BrzozowskiNT where
+module Brzozowski.NielsenTransformable where
 
 import Prelude hiding (Either (..))
 import Data.Either (Either (..))
 import NielsenTransformation
-import Brzozowski (Regex (..), deriveSymbol')
-import qualified Brzozowski
+import Brzozowski.Regex (Regex (..), deriveSymbol')
+import qualified Brzozowski.Regex as Brzozowski
 import Util.Unsure (unsure)
 import Data.Side
 

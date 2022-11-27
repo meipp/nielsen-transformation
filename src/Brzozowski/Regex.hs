@@ -1,4 +1,4 @@
-module Brzozowski where
+module Brzozowski.Regex where
 
 import Util.Unsure (unsure)
 
