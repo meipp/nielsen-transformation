@@ -14,6 +14,7 @@ import Data.List (groupBy, intercalate, sortOn)
 import Data.Maybe (mapMaybe)
 import Debug.Trace (trace)
 import Prelude hiding (Either (..))
+import Data.Swap
 import Data.Side
 import Util.Color
 import Util.BFS
@@ -130,9 +131,6 @@ rewriteTraces rule xs = xs >>= rewriteTrace rule
 
 joinRewriteRules :: [RewriteRule a] -> RewriteRule a
 joinRewriteRules rs x = rs >>= ($ x)
-
-class Swap a where
-    swap :: a -> a
 
 instance Swap (Equation r) where
     swap (α :=: β) = (β :=: α)
