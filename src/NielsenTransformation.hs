@@ -134,10 +134,6 @@ joinRewriteRules rs x = rs >>= ($ x)
 class Swap a where
     swap :: a -> a
 
--- TODO: remove
-instance (Swap a, Swap b) => Swap (a, b) where
-    swap (a, b) = (swap a, swap b)
-
 instance Swap (Equation r) where
     swap (α :=: β) = (β :=: α)
 
