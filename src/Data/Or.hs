@@ -1,4 +1,4 @@
-module Or where
+module Data.Or where
 
 import Data.Bifunctor (Bifunctor(bimap))
 

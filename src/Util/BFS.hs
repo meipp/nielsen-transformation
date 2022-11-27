@@ -1,6 +1,6 @@
-module BFS where
+module Util.BFS where
 
-import Util
+import Util.Util
 
 bfs :: Eq a => (Integer -> [a] -> [a]) -> (a -> Bool) -> (a -> [a]) -> [a] -> [[a]]
 bfs trace stopCondition findNeighbors startNodes = runBFS 0 [] startNodes

@@ -1,6 +1,6 @@
 module Brzozowski where
 
-import Unsure (unsure)
+import Util.Unsure (unsure)
 
 data Regex =
     Phi

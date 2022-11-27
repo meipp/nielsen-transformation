@@ -1,4 +1,4 @@
-module Unsure where
+module Util.Unsure where
 
 pedantic :: Bool
 pedantic = False

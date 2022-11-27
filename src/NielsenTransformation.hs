@@ -14,8 +14,8 @@ import Data.List (groupBy, intercalate, sortOn)
 import Data.Maybe (mapMaybe)
 import Debug.Trace (trace)
 import Prelude hiding (Either (..))
-import Color
-import BFS
+import Util.Color
+import Util.BFS
 
 newtype Terminal = Terminal Char
     deriving (Eq, Show)
