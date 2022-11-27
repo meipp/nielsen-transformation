@@ -33,10 +33,11 @@ executable nielsen-transformation
                        Util.Unsure,
                        Util.BFS,
                        NoRegex.NielsenTransformable,
-                       Example,
+                       NoRegex.Example,
                        Util.Color,
                        Data.Or,
                        Data.Side,
                        Data.Swap
                        Brzozowski.Regex,
-                       Brzozowski.NielsenTransformable
+                       Brzozowski.NielsenTransformable,
+                       Brzozowski.Example
