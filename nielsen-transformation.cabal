@@ -29,12 +29,14 @@ executable nielsen-transformation
                        -Wredundant-constraints
                        -Wno-missing-export-lists
   other-modules:       NielsenTransformation,
-                       Util,
-                       Unsure,
-                       BFS,
+                       Util.Util,
+                       Util.Unsure,
+                       Util.BFS,
                        StandardNT,
                        Example,
-                       Color,
-                       Or,
+                       Util.Color,
+                       Data.Or,
+                       Data.Side,
+                       Data.Swap
                        Brzozowski,
                        BrzozowskiNT
