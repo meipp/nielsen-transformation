@@ -29,6 +29,7 @@ executable nielsen-transformation
                        -Wredundant-constraints
                        -Wno-missing-export-lists
   other-modules:       NielsenTransformation,
+                       Definitions.Common,
                        Util.Util,
                        Util.Unsure,
                        Util.BFS,
