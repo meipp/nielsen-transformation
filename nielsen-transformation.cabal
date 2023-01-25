@@ -34,6 +34,7 @@ executable nielsen-transformation
                        Util.BFS,
                        NoRegex.NielsenTransformable,
                        NoRegex.Example,
+                       Handcrafted.BenchmarkSet,
                        Util.Color,
                        Data.Or,
                        Data.Side,
