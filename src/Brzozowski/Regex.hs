@@ -13,6 +13,12 @@ data Regex =
   | Or Regex Regex
   deriving (Eq, Ord, Show)
 
+instance Semigroup Regex where
+  (<>) = Concatenation
+
+instance Monoid Regex where
+  mempty = Lambda
+
 delta :: Regex -> Regex
 delta Phi = Phi
 delta Lambda = Lambda
