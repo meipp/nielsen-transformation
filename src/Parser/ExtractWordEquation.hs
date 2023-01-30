@@ -42,6 +42,10 @@ parseAssert :: [Expression] -> Constraint
 parseAssert [Atom "str.in_re", Atom x, Parenthesized re] = RegexConstraint x (parseRegex re)
 parseAssert [Atom "not", Parenthesized [Atom "str.in_re", Atom x, Parenthesized re]] = RegexConstraint x (Not (parseRegex re))
 parseAssert [Atom "=", t1, t2] = Equation (parseTerm t1) (parseTerm t2)
+parseAssert (Atom "<": _) = error "string comparison is not supported"
+parseAssert (Atom ">": _) = error "string comparison is not supported"
+parseAssert (Atom "<=": _) = error "string comparison is not supported"
+parseAssert (Atom ">=": _) = error "string comparison is not supported"
 parseAssert _ = error "parse error"
 
 parseRegex :: [Expression] -> Regex
