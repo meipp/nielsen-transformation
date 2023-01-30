@@ -12,12 +12,18 @@ import Data.Either (Either (..))
 import Data.Function (on)
 import Data.List (groupBy, intercalate, sortOn)
 import Data.Maybe (mapMaybe)
-import Debug.Trace (trace)
+import qualified Debug.Trace (trace)
 import Prelude hiding (Either (..))
 import Data.Swap
 import Data.Side
 import Util.Color
 import Util.BFS
+
+printTrace :: Bool
+printTrace = False
+
+trace :: String -> a -> a
+trace = if printTrace then Debug.Trace.trace else flip const
 
 newtype Terminal = Terminal Char
     deriving (Eq, Show)
