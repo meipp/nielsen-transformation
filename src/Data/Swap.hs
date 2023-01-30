@@ -8,3 +8,6 @@ class Swap a where
 instance Swap (Either a a) where
     swap (Left x) = Right x
     swap (Right x) = Left x
+
+instance Swap (a, a) where
+    swap (x, y) = (y, x)
