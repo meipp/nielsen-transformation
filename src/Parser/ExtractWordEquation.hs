@@ -62,6 +62,8 @@ parseRegex [Atom "re.+", Parenthesized p] = Concatenation r (Iterate r)
 parseRegex [Atom "re.intersection", Parenthesized p, Parenthesized q] = And (parseRegex p) (parseRegex q)
 parseRegex [Atom "re.union", Parenthesized p, Parenthesized q] = Or (parseRegex p) (parseRegex q)
 parseRegex [Atom "re.comp", Parenthesized p] = Not (parseRegex p)
+parseRegex [Atom "re.range", StringLiteral [a], StringLiteral [z]] = foldr Or Phi (map Symbol [a .. z])
+parseRegex [Atom "re.*", Atom "re.allchar"] = Iterate (Not Phi)
 parseRegex _ = error "parse error"
 
 strToRe :: String -> Regex
