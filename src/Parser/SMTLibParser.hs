@@ -1,9 +1,9 @@
 module Parser.SMTLibParser where
 
 import Text.Parsec.Language (GenLanguageDef)
-import Text.Parsec.Token (GenLanguageDef(..), makeTokenParser, GenTokenParser (stringLiteral, identifier, parens))
+import Text.Parsec.Token (GenLanguageDef(..), makeTokenParser, GenTokenParser (identifier, parens))
 import Data.Functor.Identity (Identity)
-import Text.Parsec (alphaNum, oneOf, (<|>), Parsec, many, eof, newline, parse)
+import Text.Parsec (alphaNum, oneOf, (<|>), Parsec, many, eof, newline, parse, char, noneOf, string, try)
 
 type Parser = Parsec String ()
 
@@ -37,7 +37,19 @@ atom :: Parser Expression
 atom = Atom <$> identifier lexer
 
 stringLit :: Parser Expression
-stringLit = StringLiteral <$> stringLiteral lexer
+stringLit = StringLiteral <$> (many (char ' ') *> char '\"' *> many insideStringLiteral <* char '\"' <* many (char ' '))
+    where insideStringLiteral :: Parser Char
+          insideStringLiteral = unicodeEscape <|> escapedQuote <|> noneOf "\""
+
+          unicodeEscape :: Parser Char
+          unicodeEscape = try $ do
+            _ <- string "\\u{"
+            n <- many (oneOf "0123456789abcdef")
+            _ <- char '}'
+            return (toEnum (read ("0x" ++ n) :: Int):: Char)
+
+          escapedQuote :: Parser Char
+          escapedQuote = try (string "\"\"" *> return '\"')
 
 parenthesized :: Parser Expression
 parenthesized = Parenthesized <$> (parens lexer (many expression))
