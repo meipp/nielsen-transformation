@@ -327,4 +327,5 @@ colorReplacedOccurrencesExceptFirst _ _ [] = "ε"
 colorReplacedOccurrencesExceptFirst (Replacement x ys) f (s:ss) = showSymbol s ++ concat (ss >>= (\x' -> if x == x' then map f (map showSymbol ys) else [showSymbol x']))
 
 alphabet :: [Char]
-alphabet = ['a', 'b']
+-- alphabet = ['a', 'b']
+alphabet = [toEnum 0 .. toEnum 127]
