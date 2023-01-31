@@ -46,6 +46,10 @@ parseAssert (Atom "<": _) = error "string comparison is not supported"
 parseAssert (Atom ">": _) = error "string comparison is not supported"
 parseAssert (Atom "<=": _) = error "string comparison is not supported"
 parseAssert (Atom ">=": _) = error "string comparison is not supported"
+parseAssert [Atom "=", Atom "true", Parenthesized a] = parseAssert a
+parseAssert [Atom "or", Parenthesized a] = parseAssert a
+parseAssert [Atom "not", Parenthesized [Atom "=", Atom x, StringLiteral s]] = RegexConstraint x (Not (strToRe s))
+parseAssert [Atom "not", Parenthesized [Atom "=", _, _]] = error "inequality is not supported"
 parseAssert _ = error "parse error"
 
 parseRegex :: [Expression] -> Regex
