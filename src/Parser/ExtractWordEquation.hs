@@ -67,7 +67,10 @@ parseRegex [Atom "re.*", Atom "re.allchar"] = Iterate (Not Phi)
 parseRegex _ = error "parse error"
 
 strToRe :: String -> Regex
-strToRe as = mconcat (map Symbol as)
+-- strToRe as = mconcat (map Symbol as)
+strToRe "" = Lambda
+strToRe [a] = Symbol a
+strToRe (a:as) = Concatenation (Symbol a) (strToRe as)
 
 data TermSymbol = Variable' String | String String
     deriving Show
