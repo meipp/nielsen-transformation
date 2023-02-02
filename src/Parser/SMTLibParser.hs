@@ -55,7 +55,7 @@ parenthesized :: Parser Expression
 parenthesized = Parenthesized <$> (parens lexer (many expression))
 
 smtFile :: Parser [Expression]
-smtFile = many (expression <* many newline) <* eof
+smtFile = many newline *> many (expression <* many newline) <* eof
 
 parseSMTFile :: FilePath -> IO [Expression]
 parseSMTFile path = do
