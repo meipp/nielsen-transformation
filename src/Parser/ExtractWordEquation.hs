@@ -2,6 +2,7 @@ module Parser.ExtractWordEquation where
 
 import Prelude hiding (lookup)
 import Data.Map (Map, empty, fromList, insertWith, lookup, mapWithKey, union, (!))
+import Data.List (isPrefixOf)
 import Parser.SMTLibParser (Expression (..))
 import Brzozowski.Regex (Regex (..))
 import NielsenTransformation (Variable (..), Sequence, Terminal (Terminal), ToSymbol (toSymbol))
@@ -81,6 +82,7 @@ parseTerm :: Expression -> Term
 parseTerm (Atom x) = [Variable' x]
 parseTerm (StringLiteral s) = [String s]
 parseTerm (Parenthesized (Atom "str.++" : ts)) = mconcat (map parseTerm ts)
+parseTerm (Parenthesized [Atom "str.replace", StringLiteral s, StringLiteral t, StringLiteral t']) = [String (strReplace s t t')]
 parseTerm _ = error "parse error"
 
 constructVariables :: [String] -> [Constraint] -> Map String Char -> Map String (Variable Regex)
@@ -108,3 +110,12 @@ termToSequence variables (String s : ts) = map (toSymbol . Terminal) s++ termToS
 
 (!?) :: Map String b -> String -> b
 (!?) m k = fromMaybe (error ("key " ++ k ++ " not found")) (lookup k m)
+
+-- replaces first occurrence of t in s with t'
+-- see https://smtlib.cs.uiowa.edu/theories-UnicodeStrings.shtml
+strReplace :: String -> String -> String -> String
+strReplace "" "" t' = t'
+strReplace "" _ _ = ""
+strReplace s@(x:xs) t t'
+    | t `isPrefixOf` s = t' ++ drop (length t) s
+    | otherwise = x : strReplace xs t t'
